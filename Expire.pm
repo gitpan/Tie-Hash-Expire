@@ -5,10 +5,16 @@ use strict;
 use POSIX qw/ceil/;
 use Carp;
 
-use vars qw($VERSION @ISA);
-@ISA = qw();
+use vars qw($VERSION $HI_RES_AVAILABLE);
 
-$VERSION = '0.01';
+$VERSION = '0.02';
+
+BEGIN {
+	eval "use Time::HiRes qw/time/";
+	unless($@){
+		$HI_RES_AVAILABLE = 1;
+	}
+}
 
 $Tie::Hash::Expire::clean_int = 180; # Maybe later, the user can set this.
 
@@ -18,7 +24,10 @@ sub TIEHASH {
 
 	# TODO: What do we do without $args->{expire_seconds}
 	unless(exists $args->{expire_seconds}){
-		carp "hash tied to Tie::Hash::Expire without specifying expire_seconds.  All hash keys will expire immediately";
+		carp "hash tied to Tie::Hash::Expire without specifying expire_seconds.  Hash keys will not expire.";
+	}
+	if(!$HI_RES_AVAILABLE and $args->{expire_seconds} =~ /\.\d+/){
+		carp "expire_seconds appears to be a decimal number, but Time::HiRes is not available.";
 	}
 
 	my $self = {
@@ -62,7 +71,7 @@ sub FETCH {
 		my $time = time;
 
 		my $index = $self->{hash}->{$key};
-		if($time - $self->{array}->[$index]->[0] >= $self->{lifespan}){
+		if((defined $self->{lifespan}) and $time - $self->{array}->[$index]->[0] >= $self->{lifespan}){
 			# It is expired.
 			$self->chop_hash($index);
 			return undef;
@@ -86,7 +95,7 @@ sub EXISTS {
 		my $time = time;
 
 		my $index = $self->{hash}->{$key};
-		if($time - $self->{array}->[$index]->[0] >= $self->{lifespan}){
+		if(defined $self->{lifespan} and $time - $self->{array}->[$index]->[0] >= $self->{lifespan}){
 			# It is expired.
 			$self->chop_hash($index);
 		}
@@ -166,6 +175,10 @@ sub clean_house {
 	# Return the index of the first chopped key, or undef if no chop
 	# occurred.
 
+	unless(defined $self->{lifespan}){
+		return undef;
+	}
+
 	my $max = $#{$self->{array}};
 	my $min = -1;
 	my $time = time;
@@ -221,7 +234,6 @@ sub rebuild_hash {
 	$self->{hash} = {
 		map {$self->{array}->[$_]->[1], $_} (0..$#{$self->{array}})
 	};
-
 }
 1;
 
@@ -241,9 +253,13 @@ Tie::Hash::Expire - Hashes with keys that expire after a user-set period.
   $test{'dog'} = 'doghouse';
   sleep 5;
   $test{'bird'} = 'nest';
-  sleep 5;
+  sleep 6;
 
   print keys %test, "\n";	# The only key is 'bird'
+
+  my %hi_res;
+  tie %hi_res, 'Tie::Hash::Expire', {'expire_seconds' => 5.21};
+	# Decimal number of seconds works if you have Time::HiRes
 
 =head1 ABSTRACT
 
@@ -253,7 +269,9 @@ Hashes tied to Tie::Hash::Expire have keys that cease to exist 'expire_seconds' 
 
 Hashes tied to Tie::Hash::Expire behave like normal hashes in all respects except that when a key is added or the value associated with a key is changed, the current time is stored, and after 'expire_seconds' the key and value are removed from the hash.
 
-No finer resolution is currently available than seconds.  The number of seconds specified by 'expire_seconds' is taken to mean an absolute maximum lifespan for the key.  In other words, if you set 'expire_seconds' to 1 second, keys could expire as quickly as the next machine instruction, but will not last longer than 1 second.
+Resolutions finer than seconds are available if the module finds access to Time::HiRes.  If Time::HiRes is available, you can expect expiration to be accurate to 0.001 seconds.  You may specify 'expire_seconds' to be decimal numbers like 5.12 .  If Time::HiRes is available, this number will be used precisely.  If you specify a decimal number and don't have access to Time::HiRes, a warning is generated and the code will function as though you specified the next higher integer.
+
+The number of seconds specified by 'expire_seconds' is taken to mean an absolute maximum lifespan for the key, at the resolution described above.  In other words, if you set 'expire_seconds' to 1 second, and do not have Time::HiRes, keys could expire as quickly as the next machine instruction, but will not last longer than 1 second.
 
 =head1 AUTHOR
 

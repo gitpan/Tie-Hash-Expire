@@ -1,5 +1,5 @@
 
-use Test::More tests => 19;
+use Test::More tests => 22;
 
 BEGIN {
 	warn "\n\n###################################################################\n";
@@ -11,14 +11,14 @@ BEGIN {
 };
 
 my %test;
-tie %test, 'Tie::Hash::Expire', {'expire_seconds' => 2};
+tie %test, 'Tie::Hash::Expire', {'expire_seconds' => 3};
 
 ### Test assignment (STORE), fetch (FETCH) and expiration.
 
 $test{'fred'} = 'barney';
 sleep 1;
 is($test{fred}, 'barney',	'value storage and retrieval');
-sleep 1;
+sleep 3;
 is($test{fred},	undef,		'basic expiration');
 
 ### Test slicing
@@ -67,7 +67,7 @@ ok(!defined($test{undefined}),	'exists 4');
 ok(eq_set([keys %test],	[qw/one two three/]),	'keys 1'); 
 ok(eq_set([values %test],	[1,2,3,]),	'keys 2'); 
 
-sleep 1;
+sleep 2;
 
 $test{three} = 'three';
 $test{four} = 4;
@@ -75,10 +75,24 @@ $test{four} = 4;
 ok(eq_set([keys %test],	[qw/one two three four/]),	'keys 3'); 
 ok(eq_set([values %test],	[1,2,'three',4,]),	'keys 4'); 
 
-sleep 1;
+sleep 2;
 
 ok(eq_set([keys %test],	[qw/three four/]),	'keys 5'); 
 ok(eq_set([values %test],	['three',4,]),	'keys 6'); 
 
+my %zero_test;
+tie %zero_test, 'Tie::Hash::Expire', {'expire_seconds' => 0};
+
+$zero_test{foo} = 'bar';
+ok(!exists($zero_test{foo}),	'zero');
+
+
+my %undef_test;
+tie %undef_test, 'Tie::Hash::Expire';
+
+$undef_test{foo} = 'bar';
+is($undef_test{foo}, 'bar',	'no expire 1');
+sleep 2;
+is($undef_test{foo}, 'bar',	'no expire 2');
 
 
