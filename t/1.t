@@ -1,5 +1,5 @@
 
-use Test::More tests => 22;
+use Test::More tests => 28;
 
 BEGIN {
 	warn "\n\n###################################################################\n";
@@ -95,4 +95,26 @@ is($undef_test{foo}, 'bar',	'no expire 1');
 sleep 2;
 is($undef_test{foo}, 'bar',	'no expire 2');
 
+# Test for NEXTKEY bug when expirations happen mid-iteration
 
+my %exp;
+tie %exp, 'Tie::Hash::Expire', { 'expire_seconds' => 5 };
+
+$exp{'foo'} = 'bar';
+sleep 2;
+$exp{'biz'} = 'baz';
+sleep 2;
+$exp{'kate'} = 'jeffy';
+
+my ($key, $value) = each %exp;
+is($key,	'foo',	'NEXTKEY expire 1');
+is($value,	'bar',	'NEXTKEY expire 2');
+
+sleep 2;
+($key, $value) = each %exp;
+is($key,	'biz',	'NEXTKEY expire 1');
+is($value,	'baz',	'NEXTKEY expire 2');
+
+($key, $value) = each %exp;
+is($key,	'kate',	'NEXTKEY expire 1');
+is($value,	'jeffy',	'NEXTKEY expire 2');

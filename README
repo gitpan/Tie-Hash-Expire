@@ -1,4 +1,4 @@
-Tie/Hash/Expire version 0.02
+Tie/Hash/Expire version 0.03
 ===============================
 
 Hashes tied to Tie::Hash::Expire behave like normal hashes in all respects except that when a key is added or the value associated with a key is changed, the current time is stored, and after 'expire_seconds' the key and value are removed from the hash.

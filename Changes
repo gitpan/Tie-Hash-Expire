@@ -15,4 +15,8 @@ Revision history for Perl extension Tie::Hash::Expire.
 		code will function as though the next larger integer was
 		specified.
 
+0.03
+	- Bug Fix:  Fixed problem with keys expire during iteration with
+		FIRSTKEY / NEXTKEY
+
 

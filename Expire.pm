@@ -7,7 +7,7 @@ use Carp;
 
 use vars qw($VERSION $HI_RES_AVAILABLE);
 
-$VERSION = '0.02';
+$VERSION = '0.03';
 
 BEGIN {
 	eval "use Time::HiRes qw/time/";
@@ -155,7 +155,7 @@ sub NEXTKEY {
 		if($self->{curr_key} <= $chopped){	# Start over
 			$self->{curr_key} = 0;
 		} else {				# Adjust number
-			my $new = ($self->{curr_key}-$chopped)-1;
+			$self->{curr_key} = ($self->{curr_key}-$chopped)-1;
 		}
 	}
 
