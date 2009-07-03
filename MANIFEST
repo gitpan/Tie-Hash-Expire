@@ -1,7 +1,15 @@
 Changes
-Expire.pm
-Makefile.PL
 MANIFEST
+Makefile.PL
 README
-t/1.t
-t/2.t
+
+lib/Tie/Hash/Expire.pm
+
+t/00-load.t
+t/pod-coverage.t
+t/pod.t
+t/hash_basic_expire.t
+t/hash_basic.t
+t/hash_mytime.t
+t/hash_realtime.t
+META.yml                                 Module meta-data (added by MakeMaker)
